@@ -1,76 +1,98 @@
+# -*- coding: utf-8 -*-
 import requests
 import json
 import pandas as pd
 import numpy as np
 
-def coleta():
-    print(url)
-    try:
-        id = resposta["id"]
-        print(id)
-    except:
-        id = 'vazio'
-    try:
-        cnpj = resposta["cnpj"]
-    except:
-        try:
-            cnpj = resposta['cpf']+' - CPF'
-        except:
-            cnpj = 'vazio'
-    try:
-        razaosocial = resposta["razao_social"]
-        print(razaosocial)
-    except:
-        razaosocial = 'vazio'
-    # try:
-    #     nomefantasia = resposta["nome_fantasia"]
-    # except:
-    #     nomefantasia = 'vazio'
-    # idunidadecadastradora = resposta["id_unidade_cadastradora"]
-    # idnaturezajuridica = resposta["id_natureza_juridica"]
-    # idramonegocio = resposta["id_ramo_negocio"]
-    # idporteempresa = resposta["id_porte_empresa"]
-    # logradouro = resposta["logradouro"]
-    # bairro = resposta["bairro"]
-    # idmunicipio = resposta["id_municipio"]
-    # cep = resposta["cep"]
-    # ativo = resposta["ativo"]
-    # try:
-    #     recadastro = resposta["recadastro"]
-    # except:
-    #     recadastro = "vazio"
-    # habilitadolicitar = resposta["habilitado_licitar"]
-    # try:
-    #     uf = resposta["uf"]
-    # except:
-    #     uf = "vazio"
-    # try:
-    #     idcnae = resposta["id_cnae"]
-    # except:
-    #     idcnae = "vazio"
-    records.append((id, cnpj, razaosocial))
-    dataframe = pd.DataFrame(records)
-    print (dataframe)
-    header = ['id', 'cnpj', 'razaosocial']
-    dataframe.to_csv('dados.csv', mode='a', columns=header)
 
+def dadoEmpresa(requi2, records):
+	for requi3 in requi2:
+		caminho = requi3["_links"]["self"]["href"]
+		url = "http://compras.dados.gov.br"+caminho+".json"
+		resposta = requests.get(url).json()
+		coleta(resposta, records)
+
+def coleta(resposta, records):
+	try:
+		id = (resposta["id"])
+		
+	except:
+		id = "vazio"
+	print (id)
+	try:
+		cnpj = resposta["cnpj"]
+	except:
+		try:
+			cnpj = resposta['cpf']+' - CPF'
+		except:
+			cnpj = "vazio"
+	print (cnpj)
+	try:
+		razaosocial = resposta["razao_social"]
+		razaosocial.decode('cp1252').encode('utf-8')
+	except:
+		razaosocial = 'vazio'
+	print (razaosocial)
+	escrita(id, cnpj, razaosocial, records)
+	
+
+def escrita(id, cnpj, razaosocial, records):
+	try:
+		records.append((id, cnpj, razaosocial))
+		dataframe = pd.DataFrame(records)
+		dataframe.to_csv('dados.csv', mode="w", header=["ID", "CNPJ", "Razao Social"])
+		try:
+			print proxurl
+		except:
+			print caminho
+	except:
+		print "FALHA DE ESCRITA"
+		try:
+			print proxurl
+		except:
+			print caminho
+def paginacao(records, respostaBruto):
+	proxurl = "http://compras.dados.gov.br" + respostaBruto["_links"]["next"]["href"]
+	print proxurl
+	respostaBruto = requests.get(proxurl).json()
+	requi2 = respostaBruto["_embedded"]["fornecedores"]
+	dadoEmpresa(requi2, records)
+	paginacao(records, respostaBruto)
+	
 urlinit= "http://compras.dados.gov.br//fornecedores/v1/fornecedores.json?uf=DF&offset=0"
 requi1 = requests.get(urlinit).json()
 requi2 = requi1["_embedded"]["fornecedores"]
-# print(requi2)
-x = 1
+records = []
 
 for requi3 in requi2:
-    caminho = requi3["_links"]["self"]["href"]
-    url = "http://compras.dados.gov.br"+caminho+".json"
-    resposta = requests.get(url).json()
-    # print(resposta)
-    records = []
-    coleta()
+	caminho = requi3["_links"]["self"]["href"]
+	url = "http://compras.dados.gov.br"+caminho+".json"
+	resposta = requests.get(url).json()
+	try:
+		id = (resposta["id"])
+	except:
+		id = "vazio"
+	print (id)
+	try:
+		cnpj = resposta["cnpj"]
+	except:
+		try:
+			cnpj = resposta['cpf']+' - CPF'
+		except:
+			cnpj = "vazio"
+	print (cnpj)
+	try:
+		razaosocial = resposta["razao_social"]
+		razaosocial = razaosocial.decode('cp1252').encode('utf-8')
+	except:
+		razaosocial = 'vazio'
+	print (razaosocial)
+	escrita(id, cnpj, razaosocial, records)
 
-    # for dados in resposta:
-
-
-
-        #
+proxurl = "http://compras.dados.gov.br" + requi1["_links"]["next"]["href"]
+print proxurl
+respostaBruto = requests.get(proxurl).json()
+requi2 = respostaBruto["_embedded"]["fornecedores"]
+dadoEmpresa(requi2, records)
+paginacao(records, respostaBruto)
 
